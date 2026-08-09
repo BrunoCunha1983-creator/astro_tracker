@@ -1,0 +1,15 @@
+{
+  "domain": "astro_tracker",
+  "name": "Astro Tracker",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/BrunoCunha1983-creator/astro_tracker",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [
+    "skyfield==1.54",
+    "skyfield-data==7.0.0"
+  ],
+  "version": "0.1.0",
+  "issue_tracker": "https://github.com/BrunoCunha1983-creator/astro_tracker/issues"
+}
