@@ -1,0 +1,27 @@
+{
+  "title": "Astro Tracker",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Astro Tracker",
+        "description": "Choose the device_tracker whose position will be used for astronomical calculations and online data.",
+        "data": {
+          "tracker_entity": "device_tracker entity",
+          "update_interval": "Update interval",
+          "movement_threshold_km": "Minimum movement before location recalculation",
+          "event_horizon_days": "Future event horizon",
+          "enable_weather": "Use weather for observing conditions",
+          "enable_space_weather": "Use NOAA space-weather data",
+          "enable_meteor_showers": "Include meteor showers"
+        }
+      }
+    },
+    "error": {
+      "tracker_not_found": "The selected entity does not exist.",
+      "tracker_has_no_coordinates": "The entity does not currently provide latitude and longitude."
+    },
+    "abort": {
+      "already_configured": "This device_tracker is already configured."
+    }
+  }
+}
