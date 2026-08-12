@@ -14,7 +14,6 @@ from homeassistant.util import dt as dt_util
 
 from .const import PLATFORMS
 from .coordinator import AstroTrackerCoordinator
-from .models import AstroTrackerData
 from .solar_eclipse import compute_solar_eclipse_realtime
 
 
@@ -27,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     realtime_running = False
 
     async def _async_refresh_solar_eclipse(force: bool = False) -> None:
-        """Refresh only local eclipse geometry without polling cloud services."""
+        """Refresh local eclipse geometry without polling cloud services."""
         nonlocal realtime_running
         if realtime_running or coordinator.data is None:
             return
@@ -62,22 +61,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 longitude,
                 now_utc,
             )
-            values = dict(coordinator.data.values)
-            values.update(eclipse_values)
-            values["latitude"] = latitude
-            values["longitude"] = longitude
+            coordinator.data.values.update(eclipse_values)
+            coordinator.data.values["latitude"] = latitude
+            coordinator.data.values["longitude"] = longitude
+            coordinator.data.source_status["solar_eclipse_realtime"] = "local"
+            coordinator.data.values["source_status"] = coordinator.data.source_status
 
-            source_status = dict(coordinator.data.source_status)
-            source_status["solar_eclipse_realtime"] = "local"
-            values["source_status"] = source_status
-
-            coordinator.async_set_updated_data(
-                AstroTrackerData(
-                    values=values,
-                    events=coordinator.data.events,
-                    source_status=source_status,
-                )
-            )
+            # Notify CoordinatorEntity listeners directly. Using
+            # async_set_updated_data() here would reset the coordinator's normal
+            # cloud polling timer every second during an eclipse.
+            coordinator.async_update_listeners()
         finally:
             realtime_running = False
 
