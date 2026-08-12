@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE
+from homeassistant.const import PERCENTAGE, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -64,6 +64,37 @@ def _source_attributes(values: dict[str, Any]) -> dict[str, Any]:
         "tracker_name": values.get("tracker_name"),
         "last_location_update": values.get("last_location_update"),
         "sources": values.get("source_status", {}),
+    }
+
+
+def _solar_eclipse_attributes(values: dict[str, Any]) -> dict[str, Any]:
+    """Return detailed local solar eclipse attributes."""
+    return {
+        "source": values.get("solar_eclipse_source"),
+        "geometric_active": values.get("solar_eclipse_geometric_active"),
+        "visible_from_tracker": values.get("solar_eclipse_visible"),
+        "totality": values.get("solar_eclipse_totality"),
+        "annularity": values.get("solar_eclipse_annularity"),
+        "local_type": values.get("solar_eclipse_local_type"),
+        "start": values.get("solar_eclipse_start"),
+        "second_contact": values.get("solar_eclipse_second_contact"),
+        "maximum": values.get("solar_eclipse_maximum"),
+        "third_contact": values.get("solar_eclipse_third_contact"),
+        "end": values.get("solar_eclipse_end"),
+        "maximum_obscuration": values.get("solar_eclipse_max_obscuration"),
+        "maximum_magnitude": values.get("solar_eclipse_max_magnitude"),
+        "sun_altitude_at_maximum": values.get(
+            "solar_eclipse_sun_altitude_at_maximum"
+        ),
+        "visible_at_maximum": values.get("solar_eclipse_visible_at_maximum"),
+        "sun_altitude": values.get("solar_eclipse_sun_altitude"),
+        "sun_azimuth": values.get("solar_eclipse_sun_azimuth"),
+        "moon_altitude": values.get("solar_eclipse_moon_altitude"),
+        "moon_azimuth": values.get("solar_eclipse_moon_azimuth"),
+        "sun_angular_radius": values.get("solar_eclipse_sun_angular_radius"),
+        "moon_angular_radius": values.get("solar_eclipse_moon_angular_radius"),
+        "latitude": values.get("latitude"),
+        "longitude": values.get("longitude"),
     }
 
 
@@ -229,6 +260,89 @@ SENSORS: tuple[AstroSensorDescription, ...] = (
         },
     ),
     AstroSensorDescription(
+        key="solar_eclipse_phase",
+        name="Fase do eclipse solar",
+        icon="mdi:weather-sunny-off",
+        value_fn=lambda v: v.get("solar_eclipse_phase"),
+        attrs_fn=_solar_eclipse_attributes,
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_obscuration",
+        name="Ocultação do eclipse solar",
+        icon="mdi:circle-opacity",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda v: v.get("solar_eclipse_obscuration"),
+        attrs_fn=_solar_eclipse_attributes,
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_magnitude",
+        name="Magnitude do eclipse solar",
+        icon="mdi:eclipse",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda v: v.get("solar_eclipse_magnitude"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_separation",
+        name="Separação Sol-Lua",
+        icon="mdi:arrow-expand-horizontal",
+        native_unit_of_measurement="°",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda v: v.get("solar_eclipse_separation"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_max_obscuration",
+        name="Ocultação máxima local",
+        icon="mdi:brightness-percent",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda v: v.get("solar_eclipse_max_obscuration"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_progress",
+        name="Progresso do eclipse solar",
+        icon="mdi:progress-clock",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda v: v.get("solar_eclipse_progress"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_seconds_to_maximum",
+        name="Tempo até ao máximo do eclipse",
+        icon="mdi:timer-sand",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        value_fn=lambda v: v.get("solar_eclipse_seconds_to_maximum"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_start",
+        name="Início do eclipse solar local",
+        icon="mdi:clock-start",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda v: v.get("solar_eclipse_start"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_maximum",
+        name="Máximo do eclipse solar local",
+        icon="mdi:clock-star-four-points",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda v: v.get("solar_eclipse_maximum"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_end",
+        name="Fim do eclipse solar local",
+        icon="mdi:clock-end",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda v: v.get("solar_eclipse_end"),
+    ),
+    AstroSensorDescription(
+        key="solar_eclipse_updated_at",
+        name="Última atualização do eclipse solar",
+        icon="mdi:update",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda v: v.get("solar_eclipse_updated_at"),
+    ),
+    AstroSensorDescription(
         key="next_event",
         name="Próximo fenómeno astronómico",
         icon="mdi:calendar-star",
@@ -313,6 +427,8 @@ class AstroTrackerSensor(AstroTrackerEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, description.key)
         self.entity_description = description
+        if description.key.startswith("solar_eclipse_"):
+            self._attr_suggested_object_id = f"astro_tracker_{description.key}"
 
     @property
     def native_value(self) -> Any:
