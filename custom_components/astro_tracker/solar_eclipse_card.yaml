@@ -1,0 +1,83 @@
+# Astro Tracker — Eclipse solar em tempo real
+# Card 100% nativo do Home Assistant.
+
+type: vertical-stack
+cards:
+  - type: markdown
+    content: |
+      ## ☀️ Eclipse solar em tempo real
+      {% set obsc = states('sensor.astro_tracker_solar_eclipse_obscuration') %}
+      {% set phase = states('sensor.astro_tracker_solar_eclipse_phase') %}
+      **Ocultação:** {{ obsc if obsc not in ['unknown', 'unavailable'] else '—' }} %  
+      **Fase:** {{ phase if phase not in ['unknown', 'unavailable'] else '—' }}
+
+      {% if is_state('binary_sensor.astro_tracker_solar_eclipse_visible', 'on') %}
+      **🟢 Eclipse visível na localização atual**
+      {% else %}
+      Eclipse não visível neste instante na localização atual.
+      {% endif %}
+
+  - type: gauge
+    entity: sensor.astro_tracker_solar_eclipse_obscuration
+    name: Ocultação do Sol
+    min: 0
+    max: 100
+    needle: true
+    severity:
+      green: 0
+      yellow: 50
+      red: 90
+
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: entity
+        entity: sensor.astro_tracker_solar_eclipse_magnitude
+        name: Magnitude
+        icon: mdi:eclipse
+      - type: entity
+        entity: sensor.astro_tracker_solar_eclipse_seconds_to_maximum
+        name: Até ao máximo
+        icon: mdi:timer-sand
+      - type: entity
+        entity: sensor.astro_tracker_solar_eclipse_max_obscuration
+        name: Máximo local
+        icon: mdi:brightness-percent
+      - type: entity
+        entity: sensor.astro_tracker_solar_eclipse_progress
+        name: Progresso
+        icon: mdi:progress-clock
+
+  - type: entities
+    title: Contactos e geometria
+    show_header_toggle: false
+    entities:
+      - entity: binary_sensor.astro_tracker_solar_eclipse_visible
+        name: Visível agora
+      - entity: binary_sensor.astro_tracker_solar_eclipse_active
+        name: Eclipse geométrico ativo
+      - entity: binary_sensor.astro_tracker_solar_eclipse_totality
+        name: Totalidade
+      - entity: binary_sensor.astro_tracker_solar_eclipse_annularity
+        name: Anularidade
+      - entity: sensor.astro_tracker_solar_eclipse_start
+        name: Início local
+      - entity: sensor.astro_tracker_solar_eclipse_maximum
+        name: Máximo local
+      - entity: sensor.astro_tracker_solar_eclipse_end
+        name: Fim local
+      - entity: sensor.astro_tracker_solar_eclipse_separation
+        name: Separação Sol-Lua
+      - entity: sensor.astro_tracker_solar_eclipse_updated_at
+        name: Atualizado
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.astro_tracker_solar_eclipse_totality
+        state: "on"
+    card:
+      type: markdown
+      content: |
+        # 🌑 TOTALIDADE
+        A localização atual está dentro da fase total do eclipse.
