@@ -1,21 +1,152 @@
-# Astro Tracker — Eclipse solar em tempo real
-# Card 100% nativo do Home Assistant.
+# Astro Tracker — Eclipse solar visual em tempo real
+# Card nativo do Home Assistant com simulação visual Sol/Lua em SVG.
+# Usa os sensores locais do Astro Tracker e não necessita API paga.
 
 type: vertical-stack
 cards:
   - type: markdown
+    card_size: 14
+    entity_id:
+      - sensor.astro_tracker_solar_eclipse_obscuration
+      - sensor.astro_tracker_solar_eclipse_phase
+      - sensor.astro_tracker_solar_eclipse_separation
+      - sensor.astro_tracker_solar_eclipse_magnitude
+      - sensor.astro_tracker_solar_eclipse_seconds_to_maximum
+      - sensor.astro_tracker_solar_eclipse_max_obscuration
+      - sensor.astro_tracker_solar_eclipse_progress
+      - binary_sensor.astro_tracker_solar_eclipse_visible
+      - binary_sensor.astro_tracker_solar_eclipse_totality
+      - binary_sensor.astro_tracker_solar_eclipse_annularity
     content: |
-      ## ☀️ Eclipse solar em tempo real
-      {% set obsc = states('sensor.astro_tracker_solar_eclipse_obscuration') %}
+      {% set obsc = states('sensor.astro_tracker_solar_eclipse_obscuration') | float(0) %}
       {% set phase = states('sensor.astro_tracker_solar_eclipse_phase') %}
-      **Ocultação:** {{ obsc if obsc not in ['unknown', 'unavailable'] else '—' }} %  
-      **Fase:** {{ phase if phase not in ['unknown', 'unavailable'] else '—' }}
-
-      {% if is_state('binary_sensor.astro_tracker_solar_eclipse_visible', 'on') %}
-      **🟢 Eclipse visível na localização atual**
+      {% set sep = states('sensor.astro_tracker_solar_eclipse_separation') | float(2) %}
+      {% set sun_r = state_attr('sensor.astro_tracker_solar_eclipse_obscuration', 'sun_angular_radius') | float(0.266) %}
+      {% set moon_r = state_attr('sensor.astro_tracker_solar_eclipse_obscuration', 'moon_angular_radius') | float(0.272) %}
+      {% set max_r = [sun_r, moon_r] | max %}
+      {% set scale = (92 / max_r) if max_r > 0 else 340 %}
+      {% set sun_px = sun_r * scale %}
+      {% set moon_px = moon_r * scale %}
+      {% set raw_offset = sep * scale %}
+      {% set offset = [raw_offset, 210] | min %}
+      {% set sec_to_max_txt = states('sensor.astro_tracker_solar_eclipse_seconds_to_maximum') %}
+      {% set sec_to_max = sec_to_max_txt | int(0) if sec_to_max_txt not in ['unknown', 'unavailable', 'none', 'None'] else none %}
+      {% set direction = -1 if sec_to_max is not none and sec_to_max > 0 else 1 %}
+      {% if phase in ['parcial', 'anular', 'total'] %}
+        {% set moon_cx = 160 + (offset * direction) %}
       {% else %}
-      Eclipse não visível neste instante na localização atual.
+        {% set moon_cx = 70 %}
       {% endif %}
+      {% set moon_cy = 160 %}
+      {% set visible_now = is_state('binary_sensor.astro_tracker_solar_eclipse_visible', 'on') %}
+      {% set total_now = is_state('binary_sensor.astro_tracker_solar_eclipse_totality', 'on') %}
+      {% set annular_now = is_state('binary_sensor.astro_tracker_solar_eclipse_annularity', 'on') %}
+      {% set mag = states('sensor.astro_tracker_solar_eclipse_magnitude') %}
+      {% set max_obsc = states('sensor.astro_tracker_solar_eclipse_max_obscuration') %}
+      {% set progress = states('sensor.astro_tracker_solar_eclipse_progress') %}
+
+      <div style="text-align:center; margin-bottom:8px;">
+        <div style="font-size:1.35rem; font-weight:700; margin-bottom:2px;">
+          ☀️ Eclipse solar em tempo real
+        </div>
+        <div style="font-size:0.95rem; opacity:0.9;">
+          {{ obsc | round(1) }}% de ocultação • fase: <b>{{ phase }}</b>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 320 320" width="100%" role="img" aria-label="Simulação em tempo real do eclipse solar" style="display:block; border-radius:18px; overflow:hidden; background:#030712;">
+        <defs>
+          <radialGradient id="bgGlow" cx="50%" cy="45%" r="75%">
+            <stop offset="0%" stop-color="#111827"/>
+            <stop offset="100%" stop-color="#02040b"/>
+          </radialGradient>
+
+          <radialGradient id="sunGrad" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#fff9c4"/>
+            <stop offset="45%" stop-color="#ffe082"/>
+            <stop offset="72%" stop-color="#ffca28"/>
+            <stop offset="100%" stop-color="#f57f17"/>
+          </radialGradient>
+
+          <radialGradient id="coronaGrad" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stop-color="#fff5b4" stop-opacity="0.95"/>
+            <stop offset="55%" stop-color="#ffc107" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#ff9800" stop-opacity="0"/>
+          </radialGradient>
+
+          <radialGradient id="moonGrad" cx="38%" cy="35%" r="75%">
+            <stop offset="0%" stop-color="#cfd8dc"/>
+            <stop offset="55%" stop-color="#8d99a6"/>
+            <stop offset="100%" stop-color="#4b5563"/>
+          </radialGradient>
+
+          <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="10" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <filter id="moonShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#000000" flood-opacity="0.55"/>
+          </filter>
+        </defs>
+
+        <rect x="0" y="0" width="320" height="320" fill="url(#bgGlow)"/>
+
+        <!-- estrelas -->
+        <circle cx="28" cy="36" r="1.2" fill="#e5e7eb"/>
+        <circle cx="58" cy="70" r="1" fill="#cbd5e1"/>
+        <circle cx="292" cy="46" r="1.4" fill="#f8fafc"/>
+        <circle cx="260" cy="88" r="0.9" fill="#dbeafe"/>
+        <circle cx="36" cy="268" r="1.1" fill="#f8fafc"/>
+        <circle cx="284" cy="264" r="1.1" fill="#f8fafc"/>
+        <circle cx="88" cy="26" r="0.8" fill="#e2e8f0"/>
+        <circle cx="230" cy="24" r="0.8" fill="#e2e8f0"/>
+        <circle cx="299" cy="156" r="0.8" fill="#cbd5e1"/>
+        <circle cx="19" cy="168" r="0.8" fill="#cbd5e1"/>
+
+        <!-- corona e Sol -->
+        <circle cx="160" cy="160" r="{{ (sun_px * 1.65) | round(1) }}" fill="url(#coronaGrad)" opacity="0.85"/>
+        <circle cx="160" cy="160" r="{{ (sun_px * 1.25) | round(1) }}" fill="url(#coronaGrad)" opacity="0.55"/>
+        <circle cx="160" cy="160" r="{{ sun_px | round(1) }}" fill="url(#sunGrad)" filter="url(#softGlow)"/>
+
+        <!-- Lua -->
+        <circle cx="{{ moon_cx | round(1) }}" cy="{{ moon_cy | round(1) }}" r="{{ moon_px | round(1) }}" fill="url(#moonGrad)" filter="url(#moonShadow)"/>
+
+        <!-- crateras lunares -->
+        <circle cx="{{ (moon_cx - moon_px*0.25) | round(1) }}" cy="{{ (moon_cy - moon_px*0.18) | round(1) }}" r="{{ (moon_px*0.13) | round(1) }}" fill="#46505a" opacity="0.30"/>
+        <circle cx="{{ (moon_cx + moon_px*0.18) | round(1) }}" cy="{{ (moon_cy - moon_px*0.05) | round(1) }}" r="{{ (moon_px*0.09) | round(1) }}" fill="#46505a" opacity="0.22"/>
+        <circle cx="{{ (moon_cx - moon_px*0.05) | round(1) }}" cy="{{ (moon_cy + moon_px*0.22) | round(1) }}" r="{{ (moon_px*0.11) | round(1) }}" fill="#46505a" opacity="0.25"/>
+        <circle cx="{{ (moon_cx + moon_px*0.26) | round(1) }}" cy="{{ (moon_cy + moon_px*0.20) | round(1) }}" r="{{ (moon_px*0.07) | round(1) }}" fill="#46505a" opacity="0.18"/>
+
+        {% if total_now %}
+          <text x="160" y="34" text-anchor="middle" fill="#f8fafc" font-size="20" font-weight="700">TOTALIDADE</text>
+          <text x="160" y="56" text-anchor="middle" fill="#cbd5e1" font-size="11">A Lua cobre totalmente o disco solar</text>
+        {% elif annular_now %}
+          <text x="160" y="34" text-anchor="middle" fill="#f8fafc" font-size="20" font-weight="700">ANULAR</text>
+          <text x="160" y="56" text-anchor="middle" fill="#cbd5e1" font-size="11">O Sol forma um anel luminoso</text>
+        {% elif phase == 'parcial' %}
+          <text x="160" y="34" text-anchor="middle" fill="#f8fafc" font-size="20" font-weight="700">PARCIAL</text>
+          <text x="160" y="56" text-anchor="middle" fill="#cbd5e1" font-size="11">A Lua cobre parte do Sol</text>
+        {% else %}
+          <text x="160" y="34" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="700">SEM ECLIPSE ATIVO</text>
+          <text x="160" y="56" text-anchor="middle" fill="#cbd5e1" font-size="11">Preparado para o próximo evento</text>
+        {% endif %}
+
+        <rect x="16" y="276" width="288" height="28" rx="10" fill="#0f172a" opacity="0.78"/>
+        <text x="28" y="294" fill="#f8fafc" font-size="12">Ocultação: {{ obsc | round(1) }}%</text>
+        <text x="154" y="294" fill="#f8fafc" font-size="12">Magnitude: {{ mag }}</text>
+        <text x="292" y="294" text-anchor="end" fill="#f8fafc" font-size="12">{% if visible_now %}Visível agora{% else %}Não visível{% endif %}</text>
+      </svg>
+
+      <div style="margin-top:10px; padding:10px 12px; border-radius:14px; background:rgba(15,23,42,0.35);">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div><b>Ocultação máxima local:</b> {{ max_obsc }}%</div>
+          <div><b>Progresso:</b> {{ progress }}%</div>
+        </div>
+      </div>
 
   - type: gauge
     entity: sensor.astro_tracker_solar_eclipse_obscuration
@@ -25,8 +156,8 @@ cards:
     needle: true
     severity:
       green: 0
-      yellow: 50
-      red: 90
+      yellow: 40
+      red: 85
 
   - type: grid
     columns: 2
@@ -50,9 +181,11 @@ cards:
         icon: mdi:progress-clock
 
   - type: entities
-    title: Contactos e geometria
+    title: Detalhes do eclipse
     show_header_toggle: false
     entities:
+      - entity: sensor.astro_tracker_solar_eclipse_phase
+        name: Fase
       - entity: binary_sensor.astro_tracker_solar_eclipse_visible
         name: Visível agora
       - entity: binary_sensor.astro_tracker_solar_eclipse_active
