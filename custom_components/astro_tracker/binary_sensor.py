@@ -57,6 +57,30 @@ BINARY_SENSORS: tuple[AstroBinaryDescription, ...] = (
         icon="mdi:calendar-alert",
         value_fn=lambda v: bool(v.get("event_within_24h")),
     ),
+    AstroBinaryDescription(
+        key="solar_eclipse_active",
+        name="Eclipse solar geométrico ativo",
+        icon="mdi:eclipse",
+        value_fn=lambda v: bool(v.get("solar_eclipse_geometric_active")),
+    ),
+    AstroBinaryDescription(
+        key="solar_eclipse_visible",
+        name="Eclipse solar visível",
+        icon="mdi:weather-sunny-off",
+        value_fn=lambda v: bool(v.get("solar_eclipse_visible")),
+    ),
+    AstroBinaryDescription(
+        key="solar_eclipse_totality",
+        name="Totalidade do eclipse solar",
+        icon="mdi:circle-opacity",
+        value_fn=lambda v: bool(v.get("solar_eclipse_totality")),
+    ),
+    AstroBinaryDescription(
+        key="solar_eclipse_annularity",
+        name="Anularidade do eclipse solar",
+        icon="mdi:circle-outline",
+        value_fn=lambda v: bool(v.get("solar_eclipse_annularity")),
+    ),
 )
 
 
@@ -87,6 +111,8 @@ class AstroTrackerBinarySensor(AstroTrackerEntity, BinarySensorEntity):
         """Initialize the binary sensor."""
         super().__init__(coordinator, entry, description.key)
         self.entity_description = description
+        if description.key.startswith("solar_eclipse_"):
+            self._attr_suggested_object_id = f"astro_tracker_{description.key}"
 
     @property
     def is_on(self) -> bool:
