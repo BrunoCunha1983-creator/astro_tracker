@@ -10,6 +10,6 @@
     "skyfield==1.54",
     "skyfield-data==7.0.0"
   ],
-  "version": "0.1.0",
+  "version": "0.2.0",
   "issue_tracker": "https://github.com/BrunoCunha1983-creator/astro_tracker/issues"
 }
