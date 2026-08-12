@@ -6,7 +6,7 @@ from datetime import timedelta
 
 DOMAIN = "astro_tracker"
 NAME = "Astro Tracker"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 PLATFORMS = ["sensor", "binary_sensor", "calendar", "button"]
 
